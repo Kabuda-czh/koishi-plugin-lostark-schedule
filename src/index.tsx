@@ -352,8 +352,7 @@ ${reason ? `备注: ${reason}` : ''}
       if (transporter) {
         await transporter.sendMail({
           from: config.smtp.account,
-          // to: `${session.userId}@qq.com`,
-          to: `634469564@qq.com`,
+          to: `${session.userId}@qq.com`,
           subject: `${boss} 副本排期`,
           text: `已导出 ${boss} 副本排期, 请查看附件`,
           attachments: [
