@@ -255,9 +255,9 @@ function schedule(users: LostarkSchedule[], mapTeamNumber = 8): Round[] {
     const setIds = new Set<string>()
 
     // 按角色筛选和排序玩家
-    let dps1Candidates = pool.filter(p => p.dps1 !== 0).sort((a, b) => b.dps1 - a.dps1)
-    let dps2Candidates = pool.filter(p => p.dps2 !== 0).sort((a, b) => b.dps2 - a.dps2)
-    let mercyCandidates = pool.filter(p => p.mercy !== 0).sort((a, b) => b.mercy - a.mercy)
+    let dps1Candidates = pool.filter(p => p.dps1 > 0).sort((a, b) => b.dps1 - a.dps1)
+    let dps2Candidates = pool.filter(p => p.dps2 > 0).sort((a, b) => b.dps2 - a.dps2)
+    let mercyCandidates = pool.filter(p => p.mercy > 0).sort((a, b) => b.mercy - a.mercy)
 
     if (mercyCandidates.length >= needMercy && dps1Candidates.length >= needDps1 && dps2Candidates.length >= needDps2) {
       // 尝试组成 4人小队
@@ -312,8 +312,8 @@ function schedule(users: LostarkSchedule[], mapTeamNumber = 8): Round[] {
     const setIds = new Set<string>()
 
     // 按角色筛选
-    let dpsCandidates = pool.filter(p => p.dps1 !== 0 || p.dps2 !== 0)
-    let mercyCandidates = pool.filter(p => p.mercy !== 0)
+    let dpsCandidates = pool.filter(p => p.dps1 > 0 || p.dps2 > 0)
+    let mercyCandidates = pool.filter(p => p.mercy > 0)
 
     if (mercyCandidates.length > needMercy) {
       // 如果奶妈人数大于2，优先选择奶妈
