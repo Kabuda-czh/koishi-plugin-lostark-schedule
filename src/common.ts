@@ -111,10 +111,6 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
       .string('修改日期')
       .style(sheetStyle())
 
-    worksheet.cell(3, 13)
-      .string('备注')
-      .style(sheetStyle())
-
     // 第四行开始 用户信息
     users.forEach((user, index) => {
       worksheet.cell(4 + index, 1)
@@ -144,10 +140,6 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
       worksheet.cell(4 + index, 12)
         .string(user.uploadDate)
         .style(sheetStyle())
-
-      worksheet.cell(4 + index, 13)
-        .string(user.reason || '')
-        .style(sheetStyle())
     })
 
     // 空一行开始进行合计
@@ -171,8 +163,9 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
     const rounds = schedule(users, mapTeamNumber)
 
     rounds.forEach((round, index) => {
-      const startRow = 6 + users.length + index * 2
-      const endRow = 7 + users.length + index * 2
+      const startRow = 6 + users.length + index * 3
+      const dpsRow = 7 + users.length + index * 3
+      const endRow = 8 + users.length + index * 3
 
       worksheet.cell(startRow, 1, endRow, 1, true)
 
@@ -184,12 +177,17 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
         .string(`第${index + 1}轮奶妈`)
         .style(sheetStyle())
 
-      worksheet.cell(endRow, 2)
+      worksheet.cell(dpsRow, 2)
         .string(`第${index + 1}轮DPS`)
+        .style(sheetStyle())
+
+      worksheet.cell(endRow, 2)
+        .string(`备注信息`)
         .style(sheetStyle())
 
       let mercyColumn = 3
       let dpsColumn = 3
+      let reasonColumn = 3
 
       round.users.forEach((user) => {
         if (user.role === 'mercy') {
@@ -199,18 +197,27 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
 
           mercyColumn++
         } else if (user.role === 'dps1') {
-          worksheet.cell(endRow, dpsColumn)
+          worksheet.cell(dpsRow, dpsColumn)
             .string(user.user.name)
             .style(colorSheetStyle('#F2C7FF'))
 
           dpsColumn++
         } else {
-          worksheet.cell(endRow, dpsColumn)
+          worksheet.cell(dpsRow, dpsColumn)
             .string(user.user.name)
             .style(colorSheetStyle('#FFDCC4'))
 
           dpsColumn++
         }
+
+        if (user.user.reason) {
+          worksheet.cell(endRow, reasonColumn)
+            .string(`${user.user.name}: ${user.user.reason}`)
+            .style(sheetStyle())
+
+          reasonColumn++
+        }
+
       })
     })
 
