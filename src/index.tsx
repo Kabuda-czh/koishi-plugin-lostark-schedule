@@ -162,9 +162,9 @@ export async function apply(ctx: Context, config: Config) {
           } else
             qqName = name
 
-          dps1 = parseInt(big, 10)
-          dps2 = parseInt(small, 10)
-          mercy = parseInt(sup, 10)
+          dps1 = parseInt(big, 10) || 0
+          dps2 = parseInt(small, 10) || 0
+          mercy = parseInt(sup, 10) || 0
           reason = remark ? remark.trim() : ''
 
         } else {
@@ -177,9 +177,9 @@ export async function apply(ctx: Context, config: Config) {
           // 根据正则初始化数据
           qqId = userId
           qqName = username
-          dps1 = parseInt(match[1], 10)
-          dps2 = parseInt(match[2], 10)
-          mercy = parseInt(match[3], 10)
+          dps1 = parseInt(match[1], 10) || 0
+          dps2 = parseInt(match[2], 10) || 0
+          mercy = parseInt(match[3], 10) || 0
           reason = match[4] ? match[4].trim() : ''
         }
         // 时间字符串
@@ -348,8 +348,6 @@ ${reason ? `备注: ${reason}` : ''}
       // TODO Chronocat 暂无法支持上传群文件
       // await session.bot.internal.uploadGroupFile(session.guildId, filePath, `${boss}_${guildId}_${theWednesday}.xlsx`)
       // return `已导出 ${boss} 副本排期, 请查看群文件 ${boss}_${guildId}_${theWednesday}.xlsx`
-
-      console.log(session.userId)
 
       if (transporter) {
         await transporter.sendMail({
