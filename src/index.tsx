@@ -349,6 +349,9 @@ ${reason ? `备注: ${reason}` : ''}
       // await session.bot.internal.uploadGroupFile(session.guildId, filePath, `${boss}_${guildId}_${theWednesday}.xlsx`)
       // return `已导出 ${boss} 副本排期, 请查看群文件 ${boss}_${guildId}_${theWednesday}.xlsx`
 
+      if (!session.userId)
+        return `已导出 ${boss} 副本排期, 但未获取到用户 QQ, 请联系管理员`
+
       if (transporter) {
         await transporter.sendMail({
           from: config.smtp.account,
