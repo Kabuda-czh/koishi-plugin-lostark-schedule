@@ -7,9 +7,13 @@ export interface LostarkSchedule {
   dps1: number
   dps2: number
   mercy: number
+  lastDps1: number
+  lastDps2: number
+  lastMercy: number
   reason?: string
   days: { [key: string]: boolean }
   joinDate: string
+  lastJoinDate: string
   uploadDate: string
 }
 
@@ -19,5 +23,5 @@ export interface ScheduleUser {
 }
 
 export interface Round {
-  users: ScheduleUser[];
+  users: ScheduleUser[]
 }

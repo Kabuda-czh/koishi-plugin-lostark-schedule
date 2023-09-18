@@ -6,6 +6,7 @@ import { createTransport } from 'nodemailer'
 import { LostarkSchedule } from './types'
 import { extractContent, getNextWednesdayToNextNextTuesday, extractNextWednesdayFromRange, extractDays, formatDate } from './utils'
 import { exportExcel } from './common'
+import {} from 'koishi-plugin-cron'
 
 export const name = 'lostark-schedule'
 
@@ -53,7 +54,7 @@ export const Config: Schema<Config> = Schema.object({
   ]),
 })
 
-export const using = ['database'] as const
+export const using = ['database', 'cron'] as const
 
 export const logger = new Logger('Lostark-Schedule')
 
@@ -102,12 +103,25 @@ export async function apply(ctx: Context, config: Config) {
       type: 'unsigned',
       initial: 0,
     },
+    lastDps1: {
+      type: 'unsigned',
+      initial: 0,
+    },
+    lastDps2: {
+      type: 'unsigned',
+      initial: 0,
+    },
+    lastMercy: {
+      type: 'unsigned',
+      initial: 0,
+    },
     reason: 'string',
     days: {
       type: 'json',
       initial: {},
     },
     joinDate: 'string',
+    lastJoinDate: 'string',
     uploadDate: 'string',
   }, {
     autoInc: true,
@@ -124,8 +138,34 @@ export async function apply(ctx: Context, config: Config) {
     },
   })
 
+  // 写 cron 进行数据库周三处理
+  ctx.cron('0 0 * * 3', async () => {
+    const needChangeUser = []
+
+    for (const user of await ctx.database.get('lostark.schedule', {})) {
+      const newUser = {
+        ...user,
+        lastDps1: user.dps1,
+        lastDps2: user.dps2,
+        lastMercy: user.mercy,
+        lastJoinDate: user.joinDate,
+      }
+
+      newUser.dps1 = 0
+      newUser.dps2 = 0
+      newUser.mercy = 0
+      newUser.joinDate = ''
+
+      needChangeUser.push(newUser)
+    }
+
+    await ctx.database.upsert('lostark.schedule', needChangeUser)
+  })
+
   if (transporter)
     logger.success('成功连接 smtp 邮箱')
+
+  ctx.command('lostark', '命运方舟工具箱')
 
   // 创建指令
   for (const map of Object.keys(maps)) {
@@ -343,7 +383,7 @@ ${reason ? `备注: ${reason}` : ''}
 
       const filePath = resolve(dataDir, `${boss}_${guildId}_${theWednesday}.xlsx`)
 
-      await exportExcel(filePath, boss, maps[boss], users)
+      await exportExcel(filePath, boss, maps[boss], users, options?.last || false)
 
       // TODO Chronocat 暂无法支持上传群文件
       // await session.bot.internal.uploadGroupFile(session.guildId, filePath, `${boss}_${guildId}_${theWednesday}.xlsx`)
