@@ -1,4 +1,4 @@
-import { Context, Logger, Schema } from 'koishi'
+import { Context, Keys, Logger, Schema } from 'koishi'
 import fs from 'node:fs'
 import { resolve } from 'node:path'
 import type { Transporter } from 'nodemailer'
@@ -379,7 +379,12 @@ ${reason ? `备注: ${reason}` : ''}
 
       const theWednesday = extractNextWednesdayFromRange(getNextWednesdayToNextNextTuesday(date))
 
-      const users = await ctx.database.get('lostark.schedule', { boss, guildId, joinDate: theWednesday })
+      let users: Pick<LostarkSchedule, Keys<LostarkSchedule, any>>[]
+
+      if (options?.last)
+        users = await ctx.database.get('lostark.schedule', { boss, guildId, lastJoinDate: theWednesday })
+      else
+        users = await ctx.database.get('lostark.schedule', { boss, guildId, joinDate: theWednesday })
 
       if (!users.length)
         return `暂无 ${boss} 副本排期`
@@ -435,8 +440,12 @@ ${reason ? `备注: ${reason}` : ''}
       const theWednesday = extractNextWednesdayFromRange(getNextWednesdayToNextNextTuesday(date))
 
       const bossPromise = await Promise.allSettled(Object.keys(config.maps).map(async (boss) => {
+        let users: Pick<LostarkSchedule, Keys<LostarkSchedule, any>>[]
 
-        const users = await ctx.database.get('lostark.schedule', { boss, guildId, joinDate: theWednesday })
+        if (options?.last)
+          users = await ctx.database.get('lostark.schedule', { boss, guildId, lastJoinDate: theWednesday })
+        else
+          users = await ctx.database.get('lostark.schedule', { boss, guildId, joinDate: theWednesday })
 
         if (!users.length)
           throw new Error(`暂无 ${boss} 副本排期`)
