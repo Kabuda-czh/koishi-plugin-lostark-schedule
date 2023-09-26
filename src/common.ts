@@ -3,6 +3,11 @@ import { LostarkSchedule, Round, ScheduleUser } from './types'
 
 // 导出 excel 表格
 export async function exportExcel(filePath: string, map: string, mapTeamNumber: number, users: LostarkSchedule[], isLast = false) {
+  const sortFunc = (a: LostarkSchedule, b: LostarkSchedule) =>
+    isLast
+      ? (b.lastDps1 + b.lastDps2 + b.lastMercy) - (a.lastDps1 + a.lastDps2 + a.lastMercy)
+      : (b.dps1 + b.dps2 + b.mercy) - (a.dps1 + a.dps2 + a.mercy)
+
   return new Promise<void>((resolve, reject) => {
     const workbook = new xlsx.Workbook({
       defaultFont: {
@@ -56,7 +61,7 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
       .style(colorSheetStyle('#C7ECFF'))
 
     worksheet.cell(2, 5)
-      .string('改了就填这列')
+      .string('账号数量总和')
       .style(colorSheetStyle('#A3D5BB'))
 
     // 第三行基础信息
@@ -82,8 +87,10 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
       .style(sheetStyle())
 
     worksheet.cell(3, 5)
-      .string('修改日期')
+      .string('总和')
       .style(sheetStyle())
+
+    users.sort(sortFunc)
 
     // 第四行开始 用户信息
     users.forEach((user, index) => {
@@ -103,8 +110,10 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
         .number(isLast ? user.lastMercy : user.mercy)
         .style(sheetStyle())
 
+      const total = (isLast ? user.lastDps1 : user.dps1) + (isLast ? user.lastDps2 : user.dps2) + (isLast ? user.lastMercy : user.mercy)
+
       worksheet.cell(4 + index, 5)
-        .string(user.uploadDate)
+        .string(`${total}`)
         .style(sheetStyle())
     })
 
