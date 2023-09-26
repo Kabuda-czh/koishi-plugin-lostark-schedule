@@ -6,7 +6,7 @@ import { createTransport } from 'nodemailer'
 import { LostarkSchedule } from './types'
 import { extractContent, getNextWednesdayToNextNextTuesday, extractNextWednesdayFromRange, extractDays, formatDate } from './utils'
 import { exportExcel } from './common'
-import {} from 'koishi-plugin-cron'
+import { } from 'koishi-plugin-cron'
 
 export const name = 'lostark-schedule'
 
@@ -198,7 +198,7 @@ export async function apply(ctx: Context, config: Config) {
 
           if (!name) {
             const guildMember = await session.bot.getGuildMember(session.guildId, id)
-            qqName = guildMember.nickname || guildMember.username || '未获取到群名字'
+            qqName = guildMember.nickname || guildMember.user.name || '未获取到群名字'
           } else
             qqName = name
 
@@ -344,13 +344,16 @@ ${users.map((user) => {
 
         const { dps1, dps2, mercy, reason, qq, name, joinDate, uploadDate } = users[0]
 
-        const joinEndDate = formatDate(new Date(new Date(joinDate).getDate() + 6))
+        let joinEndDate = ''
+
+        if (joinDate)
+          joinEndDate = formatDate(new Date(new Date(joinDate).getDate() + 6))
 
         return `${map} 副本
 玩家: ${name} 「${qq}」
 ${dps1}大 ${dps2}小 ${mercy}奶
 ${reason ? `备注: ${reason}` : ''}
-参加时间: 「${joinDate} ~ ${joinEndDate}」
+参加时间: ${joinDate && joinEndDate ? `「${joinDate} ~ ${joinEndDate}」` : '暂未参加'}
 更新时间: 「${uploadDate}」
 `
       })
@@ -413,6 +416,75 @@ ${reason ? `备注: ${reason}` : ''}
         return `已导出 ${boss} 副本排期, 但未配置邮箱信息, 请联系管理员`
       }
 
+    })
+
+  ctx
+    .guild()
+    .command(`lostark.export.all`, `导出所有副本排期 excel 文件`)
+    .alias('导出所有排期')
+    .usage('导出所有副本排期 excel 文件, 建议在每周日晚上之前导出')
+    .option('last', '-l 是否为上一周的排期表')
+    .action(async ({ session, options }) => {
+      const { guildId } = session
+
+      const date = new Date()
+
+      if (options?.last)
+        date.setDate(date.getDate() - 7)
+
+      const theWednesday = extractNextWednesdayFromRange(getNextWednesdayToNextNextTuesday(date))
+
+      const bossPromise = await Promise.allSettled(Object.keys(config.maps).map(async (boss) => {
+
+        const users = await ctx.database.get('lostark.schedule', { boss, guildId, joinDate: theWednesday })
+
+        if (!users.length)
+          throw new Error(`暂无 ${boss} 副本排期`)
+
+        const filePath = resolve(dataDir, `${boss}_${guildId}_${theWednesday}.xlsx`)
+
+        await exportExcel(filePath, boss, maps[boss], users, options?.last || false)
+
+        // TODO Chronocat 暂无法支持上传群文件
+        // await session.bot.internal.uploadGroupFile(session.guildId, filePath, `${boss}_${guildId}_${theWednesday}.xlsx`)
+        // return `已导出 ${boss} 副本排期, 请查看群文件 ${boss}_${guildId}_${theWednesday}.xlsx`
+
+        if (!session.userId)
+          throw new Error(`已导出 ${boss} 副本排期, 但未获取到用户 QQ, 请联系管理员`)
+        // return `已导出 ${boss} 副本排期, 但未获取到用户 QQ, 请联系管理员`
+
+        if (transporter) {
+          await transporter.sendMail({
+            from: config.smtp.account,
+            to: `${session.userId}@qq.com`,
+            subject: `${boss} 副本排期`,
+            text: `已导出 ${boss} 副本排期, 请查看附件`,
+            attachments: [
+              {
+                filename: `${boss}_${guildId}_${theWednesday}.xlsx`,
+                path: filePath,
+              }
+            ]
+          })
+
+          return `已导出 ${boss} 副本排期, 请查看邮箱`
+        }
+        else {
+          logger.warn(`smtp 邮箱断开!`)
+          throw new Error(`已导出 ${boss} 副本排期, 但未配置邮箱信息, 请联系管理员`)
+        }
+      }))
+
+      const successArray = bossPromise
+        .filter((promise): promise is PromiseFulfilledResult<string> => promise.status === 'fulfilled')
+      const failedArray = bossPromise
+        .filter((promise): promise is PromiseRejectedResult => promise.status === 'rejected')
+
+      return `导出成功: ${successArray.length}个
+${successArray.map((promise) => promise.value).join('\n')}
+
+导出失败: ${failedArray.length}个
+${failedArray.map((promise) => promise.reason.message).join('\n')}`
     })
 }
 
