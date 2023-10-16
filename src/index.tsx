@@ -238,6 +238,7 @@ export async function apply(ctx: Context, config: Config) {
           await ctx.database.upsert('lostark.schedule', [
             {
               id: user[0].id,
+              name: qqName,
               dps1,
               dps2,
               mercy,
