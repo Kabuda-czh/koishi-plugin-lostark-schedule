@@ -169,21 +169,25 @@ export async function exportExcel(filePath: string, map: string, mapTeamNumber: 
       let reasonColumn = 3
 
       round.users.forEach((user) => {
+        let sameNameFlag = false
+
+        sameNameFlag = round.users.some(u => u.user.name === user.user.name)
+
         if (user.role === 'mercy') {
           worksheet.cell(startRow, mercyColumn)
-            .string(user.user.name)
+            .string(sameNameFlag ?`${user.user.name} - ${user.user.qq}` : `${user.user.name}`)
             .style(sheetStyle())
 
           mercyColumn++
         } else if (user.role === 'dps1') {
           worksheet.cell(dpsRow, dpsColumn)
-            .string(user.user.name)
+            .string(sameNameFlag ?`${user.user.name} - ${user.user.qq}` : `${user.user.name}`)
             .style(colorSheetStyle('#F2C7FF'))
 
           dpsColumn++
         } else {
           worksheet.cell(dpsRow, dpsColumn)
-            .string(user.user.name)
+            .string(sameNameFlag ?`${user.user.name} - ${user.user.qq}` : `${user.user.name}`)
             .style(colorSheetStyle('#FFDCC4'))
 
           dpsColumn++
